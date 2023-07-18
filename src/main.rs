@@ -5,7 +5,7 @@ mod pixel_colour;
 mod size;
 
 use error_iter::ErrorIter as _;
-use log::{debug, error, info};
+use log::{error, info};
 use mandelbrot_settings::MandelbrotSettings;
 use pixels::{Error, Pixels, SurfaceTexture};
 use size::Size;
@@ -47,8 +47,6 @@ fn main() -> Result<(), Error> {
     };
 
     let mut paused = true;
-    let mut draw_state: Option<bool> = None;
-
     event_loop.run(move |event, _, control_flow| {
         // The one and only event that winit_input_helper doesn't have for us...
         if let Event::RedrawRequested(_) = event {
@@ -69,67 +67,43 @@ fn main() -> Result<(), Error> {
                 *control_flow = ControlFlow::Exit;
                 return;
             }
+
+            // Pause
             if input.key_pressed(VirtualKeyCode::P) {
                 paused = !paused;
             }
+
+            // Step frame by frame so ensure paused
             if input.key_pressed_os(VirtualKeyCode::Space) {
-                // Space is frame-step, so ensure we're paused
                 paused = true;
             }
+
+            // Reset pan and zoom
             if input.key_pressed(VirtualKeyCode::R) {
-                // life.randomize();
+                mandelbrot_settings.pan_reset();
+                mandelbrot_settings.zoom_reset();
             }
-            // Handle mouse. This is a bit involved since support some simple
-            // line drawing (mostly because it makes nice looking patterns).
-            let (mouse_cell, mouse_prev_cell) = input
-                .mouse()
-                .map(|(mx, my)| {
-                    let (dx, dy) = input.mouse_diff();
-                    let prev_x = mx - dx;
-                    let prev_y = my - dy;
 
-                    let (mx_i, my_i) = pixels
-                        .window_pos_to_pixel((mx, my))
-                        .unwrap_or_else(|pos| pixels.clamp_pixel_pos(pos));
-
-                    let (px_i, py_i) = pixels
-                        .window_pos_to_pixel((prev_x, prev_y))
-                        .unwrap_or_else(|pos| pixels.clamp_pixel_pos(pos));
-
-                    (
-                        (mx_i as isize, my_i as isize),
-                        (px_i as isize, py_i as isize),
-                    )
-                })
-                .unwrap_or_default();
-
-            if input.mouse_pressed(0) {
-                debug!("Mouse click at {mouse_cell:?}");
-                // draw_state = Some(life.toggle(mouse_cell.0, mouse_cell.1));
-            } else if let Some(draw_alive) = draw_state {
-                let release = input.mouse_released(0);
-                let held = input.mouse_held(0);
-                debug!("Draw at {mouse_prev_cell:?} => {mouse_cell:?}");
-                debug!("Mouse held {held:?}, release {release:?}");
-                // If they either released (finishing the drawing) or are still
-                // in the middle of drawing, keep going.
-                if release || held {
-                    debug!("Draw line of {draw_alive:?}");
-                    // life.set_line(
-                    //     mouse_prev_cell.0,
-                    //     mouse_prev_cell.1,
-                    //     mouse_cell.0,
-                    //     mouse_cell.1,
-                    //     draw_alive,
-                    // );
-                }
-                // If they let go or are otherwise not clicking anymore, stop drawing.
-                if release || !held {
-                    debug!("Draw end");
-                    draw_state = None;
-                }
+            // Pan
+            if input.key_pressed_os(VirtualKeyCode::Left) {
+                mandelbrot_settings.pan_left();
+            } else if input.key_pressed_os(VirtualKeyCode::Right) {
+                mandelbrot_settings.pan_right();
             }
+            if input.key_pressed_os(VirtualKeyCode::Up) {
+                mandelbrot_settings.pan_up();
+            } else if input.key_pressed_os(VirtualKeyCode::Down) {
+                mandelbrot_settings.pan_down();
+            }
+
             // Zoom
+            if input.key_pressed_os(VirtualKeyCode::Z) {
+                mandelbrot_settings.zoom_in();
+            } else if input.key_pressed_os(VirtualKeyCode::X) {
+                mandelbrot_settings.zoom_out();
+            }
+
+            // Scroll iterations
             let scroll = input.scroll_diff();
             if scroll != 0f32 {
                 mandelbrot_settings.add_iterations(scroll as i32);
@@ -139,6 +113,7 @@ fn main() -> Result<(), Error> {
                     format!("{:>+1}", scroll)
                 );
             }
+
             // Resize the window
             if let Some(size) = input.window_resized() {
                 if let Err(err) = pixels.resize_surface(size.width, size.height) {
@@ -154,6 +129,8 @@ fn main() -> Result<(), Error> {
                     render_size.height = size.height;
                 }
             }
+
+            // Re-draw if not paused, if settings changed, or if pressing the step frame-by-frame key (space)
             if !paused
                 || mandelbrot_settings.needs_re_render()
                 || input.key_pressed_os(VirtualKeyCode::Space)

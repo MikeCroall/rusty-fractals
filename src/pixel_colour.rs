@@ -3,7 +3,7 @@ use crate::size::Size;
 use num::Complex;
 
 #[allow(dead_code)]
-pub fn get_colour_test_gradient(size: &Size, x: usize, y: usize) -> [u8; 4] {
+pub(crate) fn get_colour_test_gradient(size: &Size, x: usize, y: usize) -> [u8; 4] {
     let r = (255_f32 * x as f32 / size.width as f32) as u8;
     let g = 255 - (255_f32 * x as f32 / size.width as f32) as u8;
     let b = 255 - (255_f32 * y as f32 / size.height as f32) as u8;
@@ -27,7 +27,12 @@ fn get_non_set_colour(iteration: i32, mbs: &MandelbrotSettings) -> [u8; 4] {
     NON_SET_COLOURS[index]
 }
 
-pub fn get_colour_mandelbrot(size: &Size, x: usize, y: usize, mbs: &MandelbrotSettings) -> [u8; 4] {
+pub(crate) fn get_colour_mandelbrot(
+    size: &Size,
+    x: usize,
+    y: usize,
+    mbs: &MandelbrotSettings,
+) -> [u8; 4] {
     let real = mbs.min_x + x as f64 * (mbs.max_x - mbs.min_x) / size.width as f64;
     let imag = mbs.min_y + y as f64 * (mbs.max_y - mbs.min_y) / size.height as f64;
 

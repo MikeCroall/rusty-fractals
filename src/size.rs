@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-pub struct Size {
+pub(crate) struct Size {
     pub width: u32,
     pub height: u32,
 }
@@ -8,8 +8,8 @@ pub struct Size {
 impl Default for Size {
     fn default() -> Self {
         Size {
-            width: 1280,
-            height: 720,
+            width: 1200,
+            height: 900,
         }
     }
 }
