@@ -8,7 +8,6 @@ authors = ["Mike Croall"]
 pixels = "0.13.0"
 winit = "0.28.6"
 winit_input_helper = "0.14.1"
-line_drawing = "1.0.0"
 log = "0.4.19"
 env_logger = "0.10.0"
 error-iter = "0.4.1"
