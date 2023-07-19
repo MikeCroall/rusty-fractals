@@ -41,18 +41,28 @@ impl MandelbrotSettings {
     }
 
     pub(crate) fn zoom_in(&mut self) {
+        let (x_offset, y_offset) = self.find_current_center();
+        self.offset_by(x_offset, y_offset);
+
         self.min_x /= self.zoom_factor;
         self.max_x /= self.zoom_factor;
         self.min_y /= self.zoom_factor;
         self.max_y /= self.zoom_factor;
+
+        self.offset_by(-x_offset, -y_offset);
         self.modified = true;
     }
 
     pub(crate) fn zoom_out(&mut self) {
+        let (x_offset, y_offset) = self.find_current_center();
+        self.offset_by(x_offset, y_offset);
+
         self.min_x *= self.zoom_factor;
         self.max_x *= self.zoom_factor;
         self.min_y *= self.zoom_factor;
         self.max_y *= self.zoom_factor;
+
+        self.offset_by(-x_offset, -y_offset);
         self.modified = true;
     }
 
@@ -97,7 +107,21 @@ impl MandelbrotSettings {
         self.modified = true;
     }
 
+    pub(crate) fn offset_by(&mut self, x_offset: f64, y_offset: f64) {
+        self.min_x -= x_offset;
+        self.max_x -= x_offset;
+        self.min_y -= y_offset;
+        self.max_y -= y_offset;
+    }
+
     fn calculate_pan_delta(&self, boundary_start: f64, boundary_end: f64) -> f64 {
         self.pan_factor * num::abs(boundary_start - boundary_end)
+    }
+
+    fn find_current_center(&self) -> (f64, f64) {
+        (
+            (self.min_x + self.max_x) / 2f64,
+            (self.min_y + self.max_y) / 2f64,
+        )
     }
 }
