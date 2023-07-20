@@ -78,7 +78,7 @@ fn main() -> Result<(), Error> {
                 paused = true;
             }
 
-            // Reset pan and zoom
+            // Reset pan, zoom, and iterations
             if input.key_pressed(VirtualKeyCode::R) {
                 mandelbrot_settings.pan_reset();
                 mandelbrot_settings.iterations_reset();
