@@ -15,6 +15,8 @@ pub(crate) fn get_colour_mandelbrot(
     let c = Complex::new(real, imag);
     let mut z = Complex::new(0.0, 0.0);
 
+    // todo: use optimised escape time algo https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Optimized_escape_time_algorithms
+    // todo: convert to pixel shader?
     let mut iteration = 0;
     while iteration < mbs.max_iterations && z.norm() <= 2.0 {
         z = z * z + c;
