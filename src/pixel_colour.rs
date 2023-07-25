@@ -1,31 +1,7 @@
 use crate::mandelbrot_settings::MandelbrotSettings;
 use crate::size::Size;
+use colors_transform::{Color, Hsl};
 use num::Complex;
-
-#[allow(dead_code)]
-pub(crate) fn get_colour_test_gradient(size: &Size, x: usize, y: usize) -> [u8; 4] {
-    let r = (255_f32 * x as f32 / size.width as f32) as u8;
-    let g = 255 - (255_f32 * x as f32 / size.width as f32) as u8;
-    let b = 255 - (255_f32 * y as f32 / size.height as f32) as u8;
-
-    [r, g, b, 255]
-}
-
-const NON_SET_COLOURS: [[u8; 4]; 7] = [
-    [139, 0, 255, 255],
-    [46, 43, 95, 255],
-    [0, 0, 255, 255],
-    [0, 255, 0, 255],
-    [255, 255, 0, 255],
-    [255, 127, 0, 255],
-    [255, 0, 0, 255],
-];
-
-fn get_non_set_colour(iteration: i32, mbs: &MandelbrotSettings) -> [u8; 4] {
-    let fractional = iteration as f32 / mbs.max_iterations as f32;
-    let index = (fractional * NON_SET_COLOURS.len() as f32) as usize;
-    NON_SET_COLOURS[index]
-}
 
 pub(crate) fn get_colour_mandelbrot(
     size: &Size,
@@ -45,9 +21,20 @@ pub(crate) fn get_colour_mandelbrot(
         iteration += 1;
     }
 
+    get_non_set_colour(iteration, mbs)
+}
+
+fn get_non_set_colour(iteration: i32, mbs: &MandelbrotSettings) -> [u8; 4] {
+    let hue = 360f32 * iteration as f32 / mbs.max_iterations as f32;
     if iteration == mbs.max_iterations {
-        [0, 0, 0, 255]
-    } else {
-        get_non_set_colour(iteration, mbs)
+        return [0, 0, 0, 255];
     }
+
+    let rgb = Hsl::from(hue, 100.0, 50.0).to_rgb();
+    [
+        rgb.get_red() as u8,
+        rgb.get_green() as u8,
+        rgb.get_blue() as u8,
+        255,
+    ]
 }

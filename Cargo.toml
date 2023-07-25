@@ -1,6 +1,6 @@
 [package]
 name = "rusty-fractals"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Mike Croall"]
 
@@ -12,3 +12,4 @@ log = "0.4.19"
 env_logger = "0.10.0"
 error-iter = "0.4.1"
 num = "0.4.1"
+colors-transform = "0.2.4"
