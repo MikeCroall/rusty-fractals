@@ -48,7 +48,7 @@ fn main() -> Result<(), Error> {
 
     let mut paused = true;
     event_loop.run(move |event, _, control_flow| {
-        // The one and only event that winit_input_helper doesn't have for us...
+        // non-winit_input_helper events
         if let Event::RedrawRequested(_) = event {
             draw(&mandelbrot_settings, &render_size, pixels.frame_mut());
             mandelbrot_settings.notify_rendered();
@@ -59,8 +59,7 @@ fn main() -> Result<(), Error> {
             }
         }
 
-        // For everything else, for let winit_input_helper collect events to build its state.
-        // It returns `true` when it is time to update our game state and request a redraw.
+        // winit_input_helper events
         if input.update(&event) {
             // Close events
             if input.key_pressed(VirtualKeyCode::Escape) || input.close_requested() {
@@ -80,7 +79,7 @@ fn main() -> Result<(), Error> {
 
             // Reset pan, zoom, and iterations
             if input.key_pressed(VirtualKeyCode::R) {
-                mandelbrot_settings.pan_reset();
+                mandelbrot_settings.pan_and_zoom_reset();
                 mandelbrot_settings.iterations_reset();
             }
 
@@ -139,9 +138,6 @@ fn main() -> Result<(), Error> {
             }
         }
     });
-
-    #[allow(unreachable_code)] // unreachable return but shows complaint if no return...
-    Ok(())
 }
 
 fn log_error<E: std::error::Error + 'static>(method_name: &str, err: E) {

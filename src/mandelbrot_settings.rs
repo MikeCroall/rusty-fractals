@@ -77,7 +77,7 @@ impl MandelbrotSettings {
         self.notify_needs_re_render();
     }
 
-    pub(crate) fn pan_reset(&mut self) {
+    pub(crate) fn pan_and_zoom_reset(&mut self) {
         let defaults = MandelbrotSettings::default();
         self.min_x = defaults.min_x;
         self.max_x = defaults.max_x;
