@@ -12,7 +12,7 @@ pub(crate) fn get_colour_mandelbrot(
     let y0 = mbs.min_y + y as f64 * (mbs.max_y - mbs.min_y) / size.height as f64;
     let mut iteration = 0;
 
-    // todo: convert to pixel shader?
+    // todo: convert to GPU shader? Currently CPU multithreaded rendering managed in main.rs
     let mut x = 0f64;
     let mut y = 0f64;
     let mut x_sq = 0f64;

@@ -8,6 +8,7 @@ use error_iter::ErrorIter as _;
 use log::{error, info};
 use mandelbrot_settings::MandelbrotSettings;
 use pixels::{Error, Pixels, SurfaceTexture};
+use rayon::prelude::*;
 use size::Size;
 use std::time::Instant;
 use winit::{
@@ -27,7 +28,7 @@ fn main() -> Result<(), Error> {
     let mut render_size = Size::default();
     let mut mandelbrot_settings = MandelbrotSettings::default();
 
-    // let monitor = event_loop.available_monitors().next().expect("No monitor!");
+    // let monitor = event_loop.available_monitors().next().expect("No monitor!"); // todo toggleable fullscreen
     let window = {
         let size = LogicalSize::new(render_size.width as f64, render_size.height as f64);
         WindowBuilder::new()
@@ -46,11 +47,14 @@ fn main() -> Result<(), Error> {
         Pixels::new(window_size.width, window_size.height, surface_texture)?
     };
 
+    let threads: usize = std::thread::available_parallelism().unwrap().into();
+    info!("Found available parallelism of {}", threads);
+
     let mut paused = true;
     event_loop.run(move |event, _, control_flow| {
         // non-winit_input_helper events
         if let Event::RedrawRequested(_) = event {
-            draw(&mandelbrot_settings, &render_size, pixels.frame_mut());
+            draw_cpu_multithreaded(&mandelbrot_settings, &render_size, &mut pixels, threads);
             mandelbrot_settings.notify_rendered();
             if let Err(err) = pixels.render() {
                 log_error("pixels.render", err);
@@ -113,7 +117,7 @@ fn main() -> Result<(), Error> {
                 );
             }
 
-            // Resize the window
+            // Resize the window // fixme window resizing is broken since adding rayon multithreaded rendering
             if let Some(size) = input.window_resized() {
                 if let Err(err) = pixels.resize_surface(size.width, size.height) {
                     log_error("pixels.resize_surface", err);
@@ -147,15 +151,32 @@ fn log_error<E: std::error::Error + 'static>(method_name: &str, err: E) {
     }
 }
 
-fn draw(mandelbrot_settings: &MandelbrotSettings, size: &Size, screen: &mut [u8]) {
+fn draw_cpu_multithreaded(
+    mandelbrot_settings: &MandelbrotSettings,
+    size: &Size,
+    pixels: &mut Pixels,
+    threads: usize,
+) {
     let start_time = Instant::now();
-    for x in 0..size.width as usize {
-        for y in 0..size.height as usize {
-            let pixel_index: usize = x * 4 + y * size.width as usize * 4;
-            let colour: [u8; 4] = get_colour_mandelbrot(size, x, y, mandelbrot_settings);
-            screen[pixel_index..pixel_index + colour.len()].copy_from_slice(&colour);
-        }
-    }
+    let len = pixels.frame_mut().len();
+    let chunk_size = len / threads;
+
+    pixels
+        .frame_mut()
+        .par_chunks_mut(chunk_size)
+        .enumerate()
+        .for_each(|(chunk_index, chunk)| {
+            chunk
+                .chunks_mut(4)
+                .enumerate()
+                .for_each(|(pixel_index, pixel)| {
+                    let window_pixel_index = (chunk_index * chunk_size / 4) + pixel_index;
+                    let x = window_pixel_index % size.width as usize;
+                    let y = window_pixel_index / size.width as usize;
+                    let colour = get_colour_mandelbrot(size, x, y, mandelbrot_settings);
+                    pixel.copy_from_slice(&colour);
+                });
+        });
     let elapsed = start_time.elapsed().as_millis();
     info!(target: "draw", "Rendering for {size} took {elapsed}ms");
 }
