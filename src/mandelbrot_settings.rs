@@ -14,7 +14,7 @@ pub(crate) struct MandelbrotSettings {
 impl Default for MandelbrotSettings {
     fn default() -> Self {
         Self {
-            max_iterations: 35,
+            max_iterations: 50,
             min_x: -2.2,
             max_x: 0.75,
             min_y: -1.2,

@@ -1,7 +1,6 @@
 use crate::mandelbrot_settings::MandelbrotSettings;
 use crate::size::Size;
 use colors_transform::{Color, Hsl};
-use num::Complex;
 
 pub(crate) fn get_colour_mandelbrot(
     size: &Size,
@@ -9,20 +8,22 @@ pub(crate) fn get_colour_mandelbrot(
     y: usize,
     mbs: &MandelbrotSettings,
 ) -> [u8; 4] {
-    let real = mbs.min_x + x as f64 * (mbs.max_x - mbs.min_x) / size.width as f64;
-    let imag = mbs.min_y + y as f64 * (mbs.max_y - mbs.min_y) / size.height as f64;
-
-    let c = Complex::new(real, imag);
-    let mut z = Complex::new(0.0, 0.0);
-
-    // todo: use optimised escape time algo https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Optimized_escape_time_algorithms
-    // todo: convert to pixel shader?
+    let x0 = mbs.min_x + x as f64 * (mbs.max_x - mbs.min_x) / size.width as f64;
+    let y0 = mbs.min_y + y as f64 * (mbs.max_y - mbs.min_y) / size.height as f64;
     let mut iteration = 0;
-    while iteration < mbs.max_iterations && z.norm() <= 2.0 {
-        z = z * z + c;
+
+    // todo: convert to pixel shader?
+    let mut x = 0f64;
+    let mut y = 0f64;
+    let mut x_sq = 0f64;
+    let mut y_sq = 0f64;
+    while (x_sq + y_sq <= 4f64) && (iteration < mbs.max_iterations) {
+        y = 2f64 * x * y + y0;
+        x = x_sq - y_sq + x0;
+        x_sq = x * x;
+        y_sq = y * y;
         iteration += 1;
     }
-
     get_non_set_colour(iteration, mbs)
 }
 
