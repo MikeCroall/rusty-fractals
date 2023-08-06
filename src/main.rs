@@ -123,7 +123,7 @@ fn main() -> Result<(), Error> {
                 );
             }
 
-            // Resize the window // fixme window resizing is broken since adding rayon multithreaded rendering
+            // Resize the window
             if let Some(size) = input.window_resized() {
                 if let Err(err) = pixels.resize_surface(size.width, size.height) {
                     log_error("pixels.resize_surface", err);
@@ -165,7 +165,11 @@ fn draw_cpu_multithreaded(
 ) {
     let start_time = Instant::now();
     let len = pixels.frame_mut().len();
-    let chunk_size = len / threads;
+    let chunk_size = {
+        let unadjusted_chunk_size = len / threads;
+        let remainder = unadjusted_chunk_size % 4;
+        unadjusted_chunk_size - remainder + 4
+    };
 
     pixels
         .frame_mut()
