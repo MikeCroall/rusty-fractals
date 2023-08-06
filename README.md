@@ -8,6 +8,7 @@ For now, we only have the Mandelbrot Set visualisation
 
 | Input              | Effect                                            |
 | ------------------ | ------------------------------------------------- |
+| `S`                | Save current image buffer to file                 |
 | `R`                | Reset pan and zoom                                |
 | `Z`                | Zoom in                                           |
 | `X`                | Zoom out                                          |

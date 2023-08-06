@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+mod io;
 mod mandelbrot_settings;
 mod pixel_colour;
 mod size;
@@ -19,7 +20,7 @@ use winit::{
 };
 use winit_input_helper::WinitInputHelper;
 
-use crate::pixel_colour::get_colour_mandelbrot;
+use crate::{io::save_image, pixel_colour::get_colour_mandelbrot};
 
 fn main() -> Result<(), Error> {
     env_logger::init();
@@ -79,6 +80,11 @@ fn main() -> Result<(), Error> {
             // Step frame by frame so ensure paused
             if input.key_pressed_os(VirtualKeyCode::Space) {
                 paused = true;
+            }
+
+            // Save image file of current render
+            if input.key_pressed(VirtualKeyCode::S) {
+                save_image(pixels.frame(), &render_size);
             }
 
             // Reset pan, zoom, and iterations
