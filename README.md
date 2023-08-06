@@ -1,6 +1,6 @@
 # Rusty Fractals
 
-## Just practicing my rust while enjoying fractals 😄
+## The Mandelbrot Set
 
 For now, we only have the Mandelbrot Set visualisation
 
@@ -26,6 +26,9 @@ The window may also be freely resized, the fractal will adjust to match
 
 ### Example images
 
+Default zoom, high max iterations
 ![Default zoom, high max iterations](img/zoomed-out-high-iter.png)
+Zoomed in on a bulb with 'lightning'
 ![Zoomed in on a bulb with 'lightning'](img/zoomed-in-lightning-bulb.png)
+Zoomed in on the seahorse valley
 ![Zoomed in on the seahorse valley](img/zoomed-in-seahorse-valley.png)
