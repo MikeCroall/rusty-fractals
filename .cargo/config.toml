@@ -1,2 +1,5 @@
 [env]
 RUST_LOG = "info"
+
+[alias]
+live = ["watch", "-q", "-c", "-w", "src/", "-w", "Cargo.toml", "-x", "run"]
