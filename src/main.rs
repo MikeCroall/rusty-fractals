@@ -14,8 +14,9 @@ use size::Size;
 use std::time::Instant;
 use winit::{
     dpi::LogicalSize,
-    event::{Event, VirtualKeyCode},
-    event_loop::{ControlFlow, EventLoop},
+    event::{Event, WindowEvent},
+    event_loop::EventLoop,
+    keyboard::KeyCode,
     window::WindowBuilder,
 };
 use winit_input_helper::WinitInputHelper;
@@ -24,7 +25,7 @@ use crate::{io::save_image, pixel_colour::get_colour_mandelbrot};
 
 fn main() -> Result<(), Error> {
     env_logger::init();
-    let event_loop = EventLoop::new();
+    let event_loop = EventLoop::new().expect("Could not create event loop");
     let mut input = WinitInputHelper::new();
     let mut render_size = Size::default();
     let mut mandelbrot_settings = MandelbrotSettings::default();
@@ -42,6 +43,7 @@ fn main() -> Result<(), Error> {
             .unwrap()
     };
 
+    todo!("Waiting on pixels to update - using the rwh05 feature flag isn't great... Follow issue here: https://github.com/parasyte/pixels/issues/379");
     let mut pixels = {
         let window_size = window.inner_size();
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
@@ -52,74 +54,74 @@ fn main() -> Result<(), Error> {
     info!("Found available parallelism of {}", threads);
 
     let mut paused = true;
-    event_loop.run(move |event, _, control_flow| {
+    event_loop.run(move |event, elwt| {
         // non-winit_input_helper events
-        if let Event::RedrawRequested(_) = event {
-            draw_cpu_multithreaded(&mandelbrot_settings, &render_size, &mut pixels, threads);
-            mandelbrot_settings.notify_rendered();
-            if let Err(err) = pixels.render() {
-                log_error("pixels.render", err);
-                *control_flow = ControlFlow::Exit;
-                return;
+        if let Event::WindowEvent { window_id, event } = event {
+            if WindowEvent::RedrawRequested == event {
+                draw_cpu_multithreaded(&mandelbrot_settings, &render_size, &mut pixels, threads);
+                mandelbrot_settings.notify_rendered();
+                if let Err(err) = pixels.render() {
+                    log_error("pixels.render", err);
+                    elwt.exit();
+                }
             }
         }
 
         // winit_input_helper events
         if input.update(&event) {
             // Close events
-            if input.key_pressed(VirtualKeyCode::Escape) || input.close_requested() {
-                *control_flow = ControlFlow::Exit;
-                return;
+            if input.key_pressed(KeyCode::Escape) || input.close_requested() {
+                elwt.exit();
             }
 
             // Pause
-            if input.key_pressed(VirtualKeyCode::P) {
+            if input.key_pressed(KeyCode::KeyP) {
                 paused = !paused;
             }
 
             // Step frame by frame so ensure paused
-            if input.key_pressed_os(VirtualKeyCode::Space) {
+            if input.key_pressed_os(KeyCode::Space) {
                 paused = true;
             }
 
             // Save image file of current render
-            if input.key_pressed(VirtualKeyCode::S) {
+            if input.key_pressed(KeyCode::KeyS) {
                 save_image(pixels.frame(), &render_size);
             }
 
             // Reset pan, zoom, and iterations
-            if input.key_pressed(VirtualKeyCode::R) {
+            if input.key_pressed(KeyCode::KeyR) {
                 mandelbrot_settings.pan_and_zoom_reset();
                 mandelbrot_settings.iterations_reset();
             }
 
             // Pan
-            if input.key_pressed_os(VirtualKeyCode::Left) {
+            if input.key_pressed_os(KeyCode::ArrowLeft) {
                 mandelbrot_settings.pan_left();
-            } else if input.key_pressed_os(VirtualKeyCode::Right) {
+            } else if input.key_pressed_os(KeyCode::ArrowRight) {
                 mandelbrot_settings.pan_right();
             }
-            if input.key_pressed_os(VirtualKeyCode::Up) {
+            if input.key_pressed_os(KeyCode::ArrowUp) {
                 mandelbrot_settings.pan_up();
-            } else if input.key_pressed_os(VirtualKeyCode::Down) {
+            } else if input.key_pressed_os(KeyCode::ArrowDown) {
                 mandelbrot_settings.pan_down();
             }
 
             // Zoom
-            if input.key_pressed_os(VirtualKeyCode::Z) {
+            if input.key_pressed_os(KeyCode::KeyZ) {
                 mandelbrot_settings.zoom_in();
-            } else if input.key_pressed_os(VirtualKeyCode::X) {
+            } else if input.key_pressed_os(KeyCode::KeyX) {
                 mandelbrot_settings.zoom_out();
             }
 
             // Scroll iterations
-            let scroll = input.scroll_diff();
-            if scroll != 0f32 {
-                mandelbrot_settings.add_iterations(scroll as i32);
+            let (_, v_scroll) = input.scroll_diff();
+            if v_scroll != 0f32 {
+                mandelbrot_settings.add_iterations(v_scroll as i32);
                 info!(
                     "New max iterations: {} (scrolled by {})",
                     mandelbrot_settings.max_iterations,
-                    format!("{:>+1}", scroll)
+                    format!("{:>+1}", v_scroll)
                 );
             }
 
@@ -127,8 +129,7 @@ fn main() -> Result<(), Error> {
             if let Some(size) = input.window_resized() {
                 if let Err(err) = pixels.resize_surface(size.width, size.height) {
                     log_error("pixels.resize_surface", err);
-                    *control_flow = ControlFlow::Exit;
-                    return;
+                    elwt.exit();
                 }
                 if size.width != render_size.width || size.height != render_size.height {
                     pixels
@@ -142,12 +143,13 @@ fn main() -> Result<(), Error> {
             // Re-draw if not paused, if settings changed, or if pressing the step frame-by-frame key (space)
             if !paused
                 || mandelbrot_settings.needs_re_render()
-                || input.key_pressed_os(VirtualKeyCode::Space)
+                || input.key_pressed_os(KeyCode::Space)
             {
                 window.request_redraw();
             }
         }
     });
+    Ok(())
 }
 
 fn log_error<E: std::error::Error + 'static>(method_name: &str, err: E) {
